@@ -300,25 +300,22 @@ def draw_tab_with_slant(
         screen.cursor.bg = tab_bg
         screen.cursor.fg = orig_fg
 
-    max_tab_length += 1
-    if max_tab_length <= 1:
-        screen.draw('…')
-    elif max_tab_length == 2:
-        screen.draw('…|')
-    elif max_tab_length < 6:
+    # max_tab_length += 1
+    # if max_tab_length <= 1:
+    #     screen.draw('…')
+    if max_tab_length <= 2:
+        screen.draw('…⎹')
+    elif max_tab_length <= 4:
         draw_sep(left_sep)
         screen.draw((' ' if max_tab_length == 5 else '') + '…' + (' ' if max_tab_length >= 4 else ''))
         draw_sep(right_sep)
     else:
         draw_sep(left_sep)
         screen.draw(' ')
-        draw_title(draw_data, screen, tab, index, max_tab_length)
-        extra = screen.cursor.x - before - max_tab_length
-        if extra >= 0:
-            screen.cursor.x -= extra + 3
-            screen.draw('…')
-        elif extra == -1:
-            screen.cursor.x -= 2
+        draw_title(draw_data, screen, tab, index, max_tab_length - 4)
+        extra = screen.cursor.x - before - max_tab_length + 2
+        if extra > 0:
+            screen.cursor.x -= extra + 1
             screen.draw('…')
         screen.draw(' ')
         draw_sep(right_sep)
@@ -333,7 +330,7 @@ def draw_tab_with_separator(
 ) -> int:
     if draw_data.leading_spaces:
         screen.draw(' ' * draw_data.leading_spaces)
-    draw_title(draw_data, screen, tab, index, max_tab_length)
+    draw_title(draw_data, screen, tab, index, max_tab_length - draw_data.leading_spaces - draw_data.trailing_spaces)
     trailing_spaces = min(max_tab_length - 1, draw_data.trailing_spaces)
     max_tab_length -= trailing_spaces
     extra = screen.cursor.x - before - max_tab_length
@@ -363,13 +360,15 @@ def draw_tab_with_fade(
     for bg in fade_colors:
         screen.cursor.bg = bg
         screen.draw(' ')
+    left_decor = len(fade_colors)
+    right_decor = len(fade_colors) +1
     screen.cursor.bg = orig_bg
-    draw_title(draw_data, screen, tab, index, max(0, max_tab_length - 8))
-    extra = screen.cursor.x - before - max_tab_length
+    draw_title(draw_data, screen, tab, index, max(0, max_tab_length - left_decor - right_decor))
+    extra = screen.cursor.x - before - max_tab_length + 1
     if extra > 0:
         screen.cursor.x = before
-        draw_title(draw_data, screen, tab, index, max(0, max_tab_length - 4))
-        extra = screen.cursor.x - before - max_tab_length
+        draw_title(draw_data, screen, tab, index, max(0, max_tab_length - right_decor))
+        extra = screen.cursor.x - before - max_tab_length + 1
         if extra > 0:
             screen.cursor.x -= extra + 1
             screen.draw('…')
@@ -407,21 +406,23 @@ def draw_tab_with_powerline(
         needs_soft_separator = False
 
     separator_symbol, soft_separator_symbol = powerline_symbols.get(draw_data.powerline_style, ('', ''))
-    min_title_length = 1 + 2
-    start_draw = 2
+    # min_title_length = 1 + 3
+    # start_draw = 2
 
-    if screen.cursor.x == 0:
-        screen.cursor.bg = tab_bg
-        screen.draw(' ')
-        start_draw = 1
+    # if screen.cursor.x == 0:
+    screen.cursor.bg = tab_bg
+    screen.draw(' ')
+    # start_draw = 1
+    decor_left = 1
+    decor_right = 2
 
     screen.cursor.bg = tab_bg
-    if min_title_length >= max_tab_length:
+    if max_tab_length <= decor_left + decor_right:
         screen.draw('…')
     else:
-        draw_title(draw_data, screen, tab, index, max_tab_length)
-        extra = screen.cursor.x + start_draw - before - max_tab_length
-        if extra > 0 and extra + 1 < screen.cursor.x:
+        draw_title(draw_data, screen, tab, index, max_tab_length - decor_left - decor_right)
+        extra = screen.cursor.x - before - max_tab_length + decor_right
+        if extra > 0:
             screen.cursor.x -= extra + 1
             screen.draw('…')
 
@@ -443,8 +444,8 @@ def draw_tab_with_powerline(
         screen.cursor.fg = prev_fg
 
     end = screen.cursor.x
-    if end < screen.columns:
-        screen.draw(' ')
+    # if end < screen.columns:
+    #     screen.draw(' ')
     return end
 
 
@@ -646,7 +647,7 @@ class TabBar:
             end = self.draw_func(self.draw_data, s, t, before, max_tab_length, i + 1, t is last_tab, ed)
             s.cursor.bg = s.cursor.fg = 0
             cell_ranges.append((before, end))
-            if not ed.for_layout and t is not last_tab and s.cursor.x > s.columns - max_tab_lengths[i+1]:
+            if not ed.for_layout and t is not last_tab and s.cursor.x > s.columns - (max_tab_lengths[i+1] - 1):
                 # Stop if there is no space for next tab
                 s.cursor.x = s.columns - 2
                 s.cursor.bg = as_rgb(color_as_int(self.draw_data.default_bg))
@@ -656,33 +657,44 @@ class TabBar:
 
         unconstrained_tab_length = max(1, s.columns - 2)
         ideal_tab_lengths = [i for i in range(len(data))]
-        default_max_tab_length = max(1, (s.columns // max(1, len(data))) - 1)
+        default_max_tab_length = max(1, s.columns // max(1, len(data)))
         max_tab_lengths = [default_max_tab_length for _ in range(len(data))]
-        active_idx = 0
-        extra = 0
+        extra = max(0, s.columns - (default_max_tab_length) * len(data))
+        # extra = s.columns
         ed.for_layout = True
         for i, t in enumerate(data):
             s.cursor.x = 0
             draw_tab(i, t, [], unconstrained_tab_length)
             ideal_tab_lengths[i] = tl = max(1, s.cursor.x)
-            if t.is_active:
-                active_idx = i
             if tl < default_max_tab_length:
                 max_tab_lengths[i] = tl
                 extra += default_max_tab_length - tl
-        if extra > 0:
-            if ideal_tab_lengths[active_idx] > max_tab_lengths[active_idx]:
-                d = min(extra, ideal_tab_lengths[active_idx] - max_tab_lengths[active_idx])
-                max_tab_lengths[active_idx] += d
-                extra -= d
-            if extra > 0:
-                over_achievers = tuple(i for i in range(len(data)) if ideal_tab_lengths[i] > max_tab_lengths[i])
-                if over_achievers:
-                    amt_per_over_achiever = extra // len(over_achievers)
-                    if amt_per_over_achiever > 0:
-                        for i in over_achievers:
-                            max_tab_lengths[i] += amt_per_over_achiever
+                # extra -= min(tl, default_max_tab_length)
+        # print(f'{ideal_tab_lengths=}')
 
+        over_achievers = [i for i in range(len(data)) if ideal_tab_lengths[i] > max_tab_lengths[i]]
+        curr_max_tab_length = default_max_tab_length
+        while over_achievers and extra:
+            # print(f'{over_achievers=}')
+            # print(f'{curr_max_tab_length=}')
+            # print(f'{extra=}')
+            shortest_len = min(ideal_tab_lengths[i] for i in over_achievers)
+            if (shortest_len - curr_max_tab_length) * len(over_achievers) <= extra:
+                extra -= len(over_achievers) * (shortest_len - curr_max_tab_length)
+                for i in over_achievers.copy():
+                    if ideal_tab_lengths[i] == shortest_len:
+                        over_achievers.remove(i)
+                    max_tab_lengths[i] = shortest_len
+                curr_max_tab_length = shortest_len
+            else:
+                amt_per_over_achiever, remainder = divmod(extra, len(over_achievers))
+                for j, i in enumerate(over_achievers):
+                    max_tab_lengths[i] += amt_per_over_achiever
+                    max_tab_lengths[i] += (j < remainder)
+                break
+
+        # print(f'{max_tab_lengths=}')
+        # print()
         s.cursor.x = 0
         s.erase_in_line(2, False)
         cr: list[tuple[int, int]] = []
