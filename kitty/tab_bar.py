@@ -300,14 +300,13 @@ def draw_tab_with_slant(
         screen.cursor.bg = tab_bg
         screen.cursor.fg = orig_fg
 
-    # max_tab_length += 1
-    # if max_tab_length <= 1:
-    #     screen.draw('…')
-    if max_tab_length <= 2:
+    if max_tab_length <= 1:
+        screen.draw('…')
+    elif max_tab_length == 2:
         screen.draw('…⎹')
     elif max_tab_length <= 4:
         draw_sep(left_sep)
-        screen.draw((' ' if max_tab_length == 5 else '') + '…' + (' ' if max_tab_length >= 4 else ''))
+        screen.draw((' ' if max_tab_length == 4 else '') + '…' + (' ' if max_tab_length >= 3 else ''))
         draw_sep(right_sep)
     else:
         draw_sep(left_sep)
@@ -406,13 +405,9 @@ def draw_tab_with_powerline(
         needs_soft_separator = False
 
     separator_symbol, soft_separator_symbol = powerline_symbols.get(draw_data.powerline_style, ('', ''))
-    # min_title_length = 1 + 3
-    # start_draw = 2
 
-    # if screen.cursor.x == 0:
     screen.cursor.bg = tab_bg
     screen.draw(' ')
-    # start_draw = 1
     decor_left = 1
     decor_right = 2
 
@@ -443,10 +438,7 @@ def draw_tab_with_powerline(
         screen.draw(f' {soft_separator_symbol}')
         screen.cursor.fg = prev_fg
 
-    end = screen.cursor.x
-    # if end < screen.columns:
-    #     screen.draw(' ')
-    return end
+    return screen.cursor.x
 
 
 @run_once
@@ -660,7 +652,6 @@ class TabBar:
         default_max_tab_length = max(1, s.columns // max(1, len(data)))
         max_tab_lengths = [default_max_tab_length for _ in range(len(data))]
         extra = max(0, s.columns - (default_max_tab_length) * len(data))
-        # extra = s.columns
         ed.for_layout = True
         for i, t in enumerate(data):
             s.cursor.x = 0
@@ -669,15 +660,10 @@ class TabBar:
             if tl < default_max_tab_length:
                 max_tab_lengths[i] = tl
                 extra += default_max_tab_length - tl
-                # extra -= min(tl, default_max_tab_length)
-        # print(f'{ideal_tab_lengths=}')
 
         over_achievers = [i for i in range(len(data)) if ideal_tab_lengths[i] > max_tab_lengths[i]]
         curr_max_tab_length = default_max_tab_length
         while over_achievers and extra:
-            # print(f'{over_achievers=}')
-            # print(f'{curr_max_tab_length=}')
-            # print(f'{extra=}')
             shortest_len = min(ideal_tab_lengths[i] for i in over_achievers)
             if (shortest_len - curr_max_tab_length) * len(over_achievers) <= extra:
                 extra -= len(over_achievers) * (shortest_len - curr_max_tab_length)
@@ -693,8 +679,6 @@ class TabBar:
                     max_tab_lengths[i] += (j < remainder)
                 break
 
-        # print(f'{max_tab_lengths=}')
-        # print()
         s.cursor.x = 0
         s.erase_in_line(2, False)
         cr: list[tuple[int, int]] = []
