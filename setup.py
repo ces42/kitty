@@ -2171,7 +2171,8 @@ def do_build(args: Options) -> None:
         elif args.action == 'build-frozen-tools':
             build_static_kittens(args, launcher_dir=args.prefix, for_freeze=True)
         elif args.action == 'linux-package':
-            build(args, native_optimizations=False)
+            # build(args, native_optimizations=False)
+            build(args, native_optimizations=True)
             package(args, bundle_type='linux-package')
         elif args.action == 'linux-freeze':
             build(args, native_optimizations=False)
