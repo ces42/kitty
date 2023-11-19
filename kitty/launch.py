@@ -692,7 +692,7 @@ def _launch(
                 apply_colors(new_window, opts.color)
             if opts.keep_focus:
                 if active:
-                    boss.set_active_window(active, switch_os_window_if_needed=True, for_keep_focus=True)
+                    boss.set_active_window(active, switch_os_window_if_needed=False, for_keep_focus=True)
                 if not Window.initial_ignore_focus_changes_context_manager_in_operation:
                     new_window.ignore_focus_changes = False
             if opts.logo:
