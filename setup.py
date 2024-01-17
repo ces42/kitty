@@ -2175,7 +2175,8 @@ def do_build(args: Options) -> None:
             build(args, native_optimizations=True)
             package(args, bundle_type='linux-package')
         elif args.action == 'linux-freeze':
-            build(args, native_optimizations=False)
+            # build(args, native_optimizations=False)
+            build(args, native_optimizations=True)
             package(args, bundle_type='linux-freeze')
         elif args.action == 'kitty.app':
             args.prefix = 'kitty.app'
