@@ -18,8 +18,9 @@ def mark(text: str, args: HintsCLIOptions, Mark: type[MarkType], extra_cli_args:
         if line == ' ':
             found_start_line = True
             continue
-        if line.startswith(': '):
-            yield Mark(idx, start, end, line, {'index': idx})
+        # if line.startswith(': '):
+        if line.lstrip().startswith(': '):
+            yield Mark(idx, start + line.find(':'), end, line, {'index': idx})
             idx += 1
         elif found_start_line:
             # skip this line incrementing the index
